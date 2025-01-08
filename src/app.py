@@ -68,10 +68,13 @@ def get_people():
 # Mostramos la información de un solo personaje según su id
 @app.route('/people/<int:people_id>', methods=['GET'])
 def get_person(people_id):
-    person = People.query.get(people_id)
-    if not person:
-        return jsonify({"error": "Person not found"}), 404
-    return jsonify(person.serialize())
+    try:
+        data = People.query.get(people_id)
+        if data is None:
+            raise Exception("Person not found")
+        return jsonify(data.serialize())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
 
 #Devolvemos todos los planetas del Blog SW de la DB
 @app.route('/planets', methods=['GET'])
@@ -82,50 +85,91 @@ def get_planets():
 # Mostramos la información de un solo planeta según su id
 @app.route('/planets/<int:planet_id>', methods=['GET'])
 def get_planet(planet_id):
-    planet = Planets.query.get(planet_id)
-    if not planet:
-        return jsonify({"error": "Planet not found"}), 404
-    return jsonify(planet.serialize())
+    try:
+        data = Planets.query.get(planet_id)
+        if data is None:
+            raise Exception("Planet not found")
+        return jsonify(data.serialize())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
 
 # Añadimos un nuevo planet favorito al usuario actual con el id = planet_id.
 @app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
 def add_favorite_planet(planet_id):
-    user_id = 1  # Simulación de usuario actual
-    favorite = Favorites(user_id=user_id, planet_id=planet_id)
-    db.session.add(favorite)
-    db.session.commit()
-    return jsonify(favorite.serialize()), 201
+    try:
+        data = request.json
+        if not data or 'user_id' not in data:
+            raise Exception("Data missing: 'user_id' is required")
+
+        favorite = Favorites(
+            user_id = data['user_id'],
+            planet_id = planet_id
+            )
+        db.session.add(favorite)
+        db.session.commit()
+        return jsonify(favorite.serialize()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
 
 # Añadimos un nuevo persoanje favorito al usuario actual con el id = people_id.
 @app.route('/favorite/people/<int:people_id>', methods=['POST'])
 def add_favorite_person(people_id):
-    user_id = 1  # Simulación de usuario actual
-    favorite = Favorites(user_id=user_id, people_id=people_id)
-    db.session.add(favorite)
-    db.session.commit()
-    return jsonify(favorite.serialize()), 201
+    try:
+        data = request.json
+        if not data or 'user_id' not in data:
+            raise Exception("Data missing: 'user_id' is required")
+
+        favorite = Favorites(
+            user_id = data['user_id'],
+            people_id = people_id
+            )
+        db.session.add(favorite)
+        db.session.commit()
+        return jsonify(favorite.serialize()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
 
 # Eliminamos un planet favorito con el id = planet_id.
 @app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
 def delete_favorite_planet(planet_id):
-    user_id = 1  # Simulación de usuario actual
-    favorite = Favorites.query.filter_by(user_id=user_id, planet_id=planet_id).first()
-    if not favorite:
-        return jsonify({"error": "Favorite not found"}), 404
-    db.session.delete(favorite)
-    db.session.commit()
-    return jsonify({"message": "Favorite deleted"}), 200
+    try:
+        data = request.json
+
+        # Data validation
+        if not data or 'user_id' not in data:
+            raise Exception("Missing data: 'user_id' is required")
+
+        favorite = Favorites.query.filter_by(user_id=data['user_id'], planet_id=planet_id).first()
+        if favorite is None:
+            raise Exception("Favorite planet not found with the provided ID")
+
+        db.session.delete(favorite)
+        db.session.commit()
+        return jsonify({'msg': 'Favorite successfully deleted'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
 
 # Eliminamos un personaje favorito con el id = people_id.
 @app.route('/favorite/people/<int:people_id>', methods=['DELETE'])
 def delete_favorite_person(people_id):
-    user_id = 1  # Simulación de usuario actual
-    favorite = Favorites.query.filter_by(user_id=user_id, people_id=people_id).first()
-    if not favorite:
-        return jsonify({"error": "Favorite not found"}), 404
-    db.session.delete(favorite)
-    db.session.commit()
-    return jsonify({"message": "Favorite deleted"}), 200
+    try:
+        data = request.json
+
+        # Data validation
+        if not data or 'user_id' not in data:
+            raise Exception("Missing data: 'user_id' is required")
+
+        favorite = Favorites.query.filter_by(user_id=data['user_id'], people_id=people_id).first()
+        if favorite is None:
+            raise Exception("Favorite person not found with the provided ID")
+
+        db.session.delete(favorite)
+        db.session.commit()
+        return jsonify({'msg': 'Favorite successfully deleted'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
 
 
 # this only runs if `$ python src/app.py` is executed
