@@ -39,7 +39,6 @@ class People(db.Model):
             "height": self.height,
             "mass": self.mass,
             "gender": self.gender
-            # do not serialize the password, its a security breach
         } 
     
 #Table Planets
